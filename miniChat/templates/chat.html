@@ -38,44 +38,71 @@
 			width: 100%;
 			height: 80vh;
 		}
-		main form{
-			text-align: center;
+		main table {
+			width: 50%;
+		}
+		main thead tr th, main tbody tr th{
+			margin-left: 10px;
+			margin-right: 10px;
 		}
 		main #chat_logs{
 			text-align: center;
 			width: 100%;
-			height: 600px;
+			height: 800px;
 			overflow: scroll;
 		}
 		main #chat_logs {
 			display: flex;
 			justify-content: center;
 		}
+		main #input_and_button{
+			display: flex;
+			justify-content: center;
+		}
 		
 	</style>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"></script>
 	<script type="text/javascript" charset="utf-8">
 		let msgs = null;
 		$(document).ready(function() {
 			var socket = io.connect("http://"+document.domain+":"+location.port);
 			
+			function text_proc(){
+				var text = document.querySelector("#text_input").value.toString();
+				if(text === "---stop---"){
+					window.location.href = "/stop";
+				}
+				else{
+					socket.emit("message sent", {data: text});
+					document.querySelector("#text_input").value = "";
+				}
+			}
+
 			socket.on('connect', function() {
-               socket.emit('am up', {data: 'I\'m connected!'});
+               socket.emit('connection made', {data: 'I\'m connected!'});
            });
 
-			socket.on("new message", function(msg){
-				msgs="";
-				msgs = msg;
-				str = "";
-				msgs.forEach(element => {
-						str += "<tr><td>"+element[0].toString()+"</td><td>"+element[1].toString()+"</td></tr>";
-						
+			document.getElementById("btn_send").addEventListener("click", () => text_proc());
+			$("#text_input").on("keyup", function(e) {
+				if(e.key === "Enter" || e.keyCode === 13){
+					text_proc();
+				}
+			});
+			socket.on("reload", function(){
+					location.reload();
+			});
+			socket.on("messages_load", function(msg){
+				$("#chat_data").html("")
+				msg.forEach(element => {
+						$('#chat_data').append("<tr><td>"+element[0].toString()+"</td><td>"+element[1].toString()+"</td></tr>");
 				});
-				$(str).appendTo("#chat_data");
-				console.log(str);
 				
 			});
+			socket.on("redirect", function(msg){
+				window.location.href = msg.url;
+			});
+			
 		});	
 	</script>
 </head>
@@ -102,10 +129,10 @@
 					</tbody>
 				</table>
 			</div>
-			<form action="/chat", method="POST">
-				<input type="text" id="text" name="text">
-				<button type="submit">SEND</button>
-				</form>
+			<div id="input_and_button">
+			<input type="text" id="text_input">
+			<button id="btn_send">SEND</button>
+			</div>
 		</main>
 	</body>
 </body>
